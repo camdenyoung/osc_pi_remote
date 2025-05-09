@@ -3,6 +3,7 @@ import threading
 import socket
 # from gpiozero import Button, LED
 from pythonosc.udp_client import SimpleUDPClient
+from pythonosc import tcp_client
 from pythonosc.dispatcher import Dispatcher
 from pythonosc import osc_server
 from signal import pause
@@ -12,7 +13,10 @@ osc_dest_ip = "10.27.5.189"     # Qlab Destination IP
 osc_dest_port = 53000
 osc_listen_ip = "0.0.0.0"           # Qlab Listen Port
 osc_listen_port = 53001         # RPi Listen Port
-client = SimpleUDPClient(osc_dest_ip, osc_dest_port)
+
+# client = SimpleUDPClient(osc_dest_ip, osc_dest_port) # Send over UDP
+client = tcp_client.SimpleTCPClient(osc_dest_ip, osc_dest_port) # Send over TCP
+
 
 number = 0
 
@@ -49,9 +53,8 @@ def button_pressed(path, value):
     client.send_message(path, value)  # Replace with your OSC path/message
 
 
-
-#receive_updates(osc_update_path, osc_update_state)
-#receive_updates("/alwaysReply", 0)
+# Enable all replies from Qlab
+receive_updates("/alwaysReply", 1)
 
 # Test to send osc message immediately with executed script
 # button_pressed(button1_on_path, 1)
@@ -61,6 +64,8 @@ while True:
             user_input = input("Enter a number: ")
             number = int(user_input)
             print("You entered:", number)
+            responses = client.get_messages(1)
+            print(responses)
             if number == 1:
                 button_pressed(button1_on_path, 1)
             elif number == 2:
@@ -69,8 +74,10 @@ while True:
                 button_pressed(button3_on_path, 1)
             elif number == 4:
                 button_pressed(button4_on_path, 1)
+            elif number ==9:
+                 print("Exiting")
+                 quit()
             else:
                 print("Not valid input")
-
         except ValueError:
              print("Invalid Input")
