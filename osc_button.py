@@ -2,7 +2,7 @@ import time
 import threading
 import socket
 # from gpiozero import Button, LED
-from pythonosc.udp_client import SimpleUDPClient
+# from pythonosc.udp_client import SimpleUDPClient
 from pythonosc import tcp_client
 from pythonosc.dispatcher import Dispatcher
 from pythonosc import osc_server
@@ -13,10 +13,13 @@ osc_dest_ip = "10.27.5.189"     # Qlab Destination IP
 osc_dest_port = 53000
 osc_listen_ip = "0.0.0.0"           # Qlab Listen Port
 osc_listen_port = 53001         # RPi Listen Port
+retry_delay = 30
+
+
+# status_led = LED(24)
 
 # client = SimpleUDPClient(osc_dest_ip, osc_dest_port) # Send over UDP
-client = tcp_client.SimpleTCPClient(osc_dest_ip, osc_dest_port) # Send over TCP
-
+# client = tcp_client.SimpleTCPClient(osc_dest_ip, osc_dest_port)  # Send over TCP
 
 number = 0
 
@@ -44,40 +47,53 @@ button4_off_path = "path/to/qlab"
 button4_off_value = 0
 
 
+def connect_to_qlab(ip, port):
+    while True:
+        try:
+            client = tcp_client.SimpleTCPClient(ip, port)
+            print(f"Connected to Qlab at {ip}:{port}")
+            # print(client)
+            # status_led.on()
+            return client
+        except (ConnectionRefusedError, socket.timeout, OSError) as e:
+            print(f"Cannot connect to Qlab ({e}) - retrying in {retry_delay}s")
+            # status_led.blink()
+            time.sleep(retry_delay)
+
+
 def receive_updates(path, value):
     print("Subcribing to Updates")
     client.send_message(path, value)
+
 
 def button_pressed(path, value):
     print("Button pressed! Cue", {number}, "Triggered")
     client.send_message(path, value)  # Replace with your OSC path/message
 
 
-# Enable all replies from Qlab
-receive_updates("/alwaysReply", 1)
-
 # Test to send osc message immediately with executed script
 # button_pressed(button1_on_path, 1)
 
 while True:
-        try:
-            user_input = input("Enter a number: ")
-            number = int(user_input)
-            print("You entered:", number)
-            responses = client.get_messages(1)
-            print(responses)
-            if number == 1:
-                button_pressed(button1_on_path, 1)
-            elif number == 2:
-                button_pressed(button2_on_path, 1)
-            elif number == 3:
-                button_pressed(button3_on_path, 1)
-            elif number == 4:
-                button_pressed(button4_on_path, 1)
-            elif number ==9:
-                 print("Exiting")
-                 quit()
-            else:
-                print("Not valid input")
-        except ValueError:
-             print("Invalid Input")
+    client = connect_to_qlab(osc_dest_ip, osc_dest_port)
+    try:
+        user_input = input("Enter a number: ")
+        number = int(user_input)
+        print("You entered:", number)
+        responses = client.get_messages(1)
+        print(responses)
+        if number == 1:
+            button_pressed(button1_on_path, 1)
+        elif number == 2:
+            button_pressed(button2_on_path, 1)
+        elif number == 3:
+            button_pressed(button3_on_path, 1)
+        elif number == 4:
+            button_pressed(button4_on_path, 1)
+        elif number == 9:
+            print("Exiting")
+            quit()
+        else:
+            print("Not valid input")
+    except ValueError:
+        print("Invalid Input")
