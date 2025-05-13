@@ -1,7 +1,7 @@
 import time
 import threading
 import socket
-# from gpiozero import Button, LED
+from gpiozero import Button, LED
 # from pythonosc.udp_client import SimpleUDPClient
 from pythonosc import tcp_client
 from pythonosc.dispatcher import Dispatcher
@@ -16,12 +16,15 @@ osc_listen_port = 53001         # RPi Listen Port
 retry_delay = 30
 
 
-# status_led = LED(24)
+status_led = LED(24)
+button1 = Button(17, pull_up=True)
 
 # client = SimpleUDPClient(osc_dest_ip, osc_dest_port) # Send over UDP
 # client = tcp_client.SimpleTCPClient(osc_dest_ip, osc_dest_port)  # Send over TCP
 
 number = 0
+
+connected = False
 
 osc_update_path = "/updates"
 osc_update_state = 1
@@ -53,12 +56,16 @@ def connect_to_qlab(ip, port):
             client = tcp_client.SimpleTCPClient(ip, port)
             print(f"Connected to Qlab at {ip}:{port}")
             # print(client)
-            # status_led.on()
+            status_led.on()
+            global connected
+            connected = True
             return client
         except (ConnectionRefusedError, socket.timeout, OSError) as e:
             print(f"Cannot connect to Qlab ({e}) - retrying in {retry_delay}s")
-            # status_led.blink()
+            status_led.blink()
+            connected = False
             time.sleep(retry_delay)
+    print(connected)
 
 
 def receive_updates(path, value):
@@ -71,29 +78,50 @@ def button_pressed(path, value):
     client.send_message(path, value)  # Replace with your OSC path/message
 
 
+def button():
+    if button1.is_pressed:
+        button_pressed(button1_on_path, 1)
+    elif number == 2:
+        button_pressed(button2_on_path, 1)
+    elif number == 3:
+        button_pressed(button3_on_path, 1)
+    elif number == 4:
+        button_pressed(button4_on_path, 1)
+    else:
+        print("waiting for input")
+
+
+def key_press():
+    user_input = input("Enter a number: ")
+    number = int(user_input)
+    print("You entered:", number)
+    responses = client.get_messages(1)
+    print(responses)
+    if number == 1:
+        button_pressed(button1_on_path, 1)
+    elif number == 2:
+        button_pressed(button2_on_path, 1)
+    elif number == 3:
+        button_pressed(button3_on_path, 1)
+    elif number == 4:
+        button_pressed(button4_on_path, 1)
+    elif number == 9:
+        print("Exiting")
+        quit()
+    else:
+        print("Not valid input")
+
 # Test to send osc message immediately with executed script
 # button_pressed(button1_on_path, 1)
 
+
 while True:
     client = connect_to_qlab(osc_dest_ip, osc_dest_port)
-    try:
-        user_input = input("Enter a number: ")
-        number = int(user_input)
-        print("You entered:", number)
-        responses = client.get_messages(1)
-        print(responses)
-        if number == 1:
-            button_pressed(button1_on_path, 1)
-        elif number == 2:
-            button_pressed(button2_on_path, 1)
-        elif number == 3:
-            button_pressed(button3_on_path, 1)
-        elif number == 4:
-            button_pressed(button4_on_path, 1)
-        elif number == 9:
-            print("Exiting")
-            quit()
-        else:
-            print("Not valid input")
-    except ValueError:
-        print("Invalid Input")
+    while connected == True:
+        try:
+            button()
+            # key_press()
+
+        except (ConnectionRefusedError, socket.timeout, OSError) as error:
+            print(f"OSC Message Send Failed: {error}")
+            connected = False
