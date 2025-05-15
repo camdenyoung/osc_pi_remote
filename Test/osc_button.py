@@ -28,6 +28,7 @@ button4 = Button(6, pull_up=True)
 
 number = 0
 heatbeat = 60
+connected = False
 
 osc_update_path = "/updates"
 osc_update_state = 1
@@ -68,7 +69,7 @@ def connect_to_qlab(ip, port):
             status_led.blink()
             connected = False
             time.sleep(retry_delay)
-        print(connected)
+    print(connected)
 
 
 def receive_updates(path, value):
@@ -84,13 +85,13 @@ def button_pressed(path, value):
 
 
 def button():
-    if button1.wait_for_press():
+    if button1.is_pressed:
         button_pressed(button1_on_path, 1)
-    elif button2.wait_for_press():
+    elif button2.is_pressed:
         button_pressed(button2_on_path, 1)
-    elif button3.wait_for_press():
+    elif button3.is_pressed:
         button_pressed(button3_on_path, 1)
-    elif button4.wait_for_press():
+    elif button4.is_pressed:
         button_pressed(button4_on_path, 1)
     elif button3.when_released:
         print("LOAD CUE")
