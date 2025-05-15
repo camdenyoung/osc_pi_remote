@@ -22,6 +22,8 @@ button2 = Button(27, pull_up=True)
 button3 = Button(5, pull_up=True)
 button4 = Button(6, pull_up=True)
 
+lock = threading.Lock()
+
 
 # client = SimpleUDPClient(osc_dest_ip, osc_dest_port) # Send over UDP
 # client = tcp_client.SimpleTCPClient(osc_dest_ip, osc_dest_port)  # Send over TCP
@@ -63,8 +65,8 @@ def connect_to_qlab(ip, port):
             client = tcp_client.SimpleTCPClient(ip, port)
             print(f"Connected to Qlab at {ip}:{port}")
             response = client.get_messages(1)
-            print(f"Response: {response}")
-            print(f"Checked = {checked}")
+            # print(f"Response: {response}")
+            # print(f"Checked = {checked}")
             status_led.on()
             checked = True
             return client
@@ -74,6 +76,32 @@ def connect_to_qlab(ip, port):
             checked = False
             print(f"Checked = {checked}")
             time.sleep(retry_delay)
+
+
+def keep_alive():
+    global connected, client, checked
+    print("Keep Alive Started")
+    client = 0
+    while True:
+        # print(f"Connected = {connected}")
+        # print(f"Thread Client = {client}")
+        time.sleep(5)
+        with lock:
+            if client:
+                try:
+                    client.send_message("/ping", 1)
+                    # print(f"Check Loop Client {client}")
+                    # print(f"Connected = {connected}")
+                    connected = True
+                    response = client.get_messages(1)
+                    # print(f"Check Response: {response}")
+                    # return connected
+                except Exception as e:
+                    print(f"Keep-alive failed: {e} Client = {client}")
+                    connected = False
+                    checked = False
+
+                    # print(f"Connected = {connected}")
 
 
 def receive_updates(path, value):
@@ -156,14 +184,18 @@ def button4_on():
 # button_pressed(button1_on_path, 1)
 
 
+threading.Thread(target=keep_alive, daemon=True).start()
+
 while True:
     global client
+    # print(f"Connected = {connected}")
     try:
         if checked == False:
             client = connect_to_qlab(osc_dest_ip, osc_dest_port)
-            print(f"Client: {client} Checked: {checked}")
+            print(f"Client: {client}")
+            print(f"Checked: {checked}")
             response = client.get_messages(1)
-            print(f"Response: {response}")
+            # print(f"Response: {response}")
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
