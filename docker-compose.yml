@@ -1,0 +1,6 @@
+services:
+  oscpiremote:
+    image: oscpiremote:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile

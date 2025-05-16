@@ -69,10 +69,11 @@ def connect_to_qlab(ip, port):
             # print(f"Checked = {checked}")
             status_led.on()
             checked = True
+            # receive_updates(osc_update_path, osc_update_state)
             return client
         except (ConnectionRefusedError, socket.timeout, OSError) as e:
             print(f"Cannot connect to Qlab ({e}) - retrying in {retry_delay}s")
-            status_led.blink()
+            status_led.blink(0.5, 0.5)
             checked = False
             print(f"Checked = {checked}")
             time.sleep(retry_delay)
@@ -111,13 +112,14 @@ def receive_updates(path, value):
 
 def button_pressed(path, value):
     print(f"Button pressed! OSC, Path: {path}, Value: {value}")
-    client.send_message(path, value)  # Replace with your OSC path/message
-    response = client.get_messages(1)
-    print(f"Response: {response}")
+    client.send_message(path, value)
+    # for msg in client.get_messages(1):
+    # print("Received:", msg)
+    # response = client.get_messages(timeout=1)
+    # print(f"Response: {response}")
+
 
 # First attempt at sending messages based on button - Not currently used
-
-
 def button():
     if button1.when_pressed:
         button_pressed(button1_on_path, 1)
@@ -196,6 +198,8 @@ while True:
             print(f"Checked: {checked}")
             response = client.get_messages(1)
             # print(f"Response: {response}")
+            # receive_updates(osc_update_path, osc_update_state)
+
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -208,4 +212,4 @@ while True:
         button4.when_pressed = button4_on
         button3.when_released = button4_on
 
-    time.sleep(1)
+    time.sleep(5)

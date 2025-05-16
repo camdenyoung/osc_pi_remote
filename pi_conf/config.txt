@@ -1,0 +1,8 @@
+#Set GPIO4 as output high for external power indicated
+gpio=4=op,dh
+
+#Update fan speeds
+dtparam=fan_temp0=25000,fan_temp0_hyst=2000,fan_temp0_speed=90
+dtparam=fan_temp1=35000,fan_temp1_hyst=3000,fan_temp1_speed=150
+dtparam=fan_temp2=45000,fan_temp2_hyst=4000,fan_temp2_speed=200
+dtparam=fan_temp3=50000,fan_temp3_hyst=5000,fan_temp3_speed=255

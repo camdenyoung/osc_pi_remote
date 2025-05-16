@@ -1,0 +1,4 @@
+colorzero==2.0
+gpiozero==2.0.1
+python-osc==1.9.3
+setuptools==80.7.1
