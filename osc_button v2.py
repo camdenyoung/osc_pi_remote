@@ -1,6 +1,7 @@
 import time
 import threading
 import socket
+import configparser
 from gpiozero import Button, LED, Device
 # from pythonosc.udp_client import SimpleUDPClient
 from pythonosc import tcp_client
@@ -12,10 +13,25 @@ from signal import pause
 # from gpiozero.pins.mock import MockFactory
 # Device.pin_factory = MockFactory()
 
+CONFIG_FILE = 'config.ini'
+
+
+def load_config():
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    print(f"Loading Config - {config}")
+    return config
+
+
+config = load_config()
+
 # OSC SETUP
-osc_dest_ip = "10.27.5.189"     # Qlab Destination IP
-osc_dest_port = 53000
-retry_delay = 30
+osc_dest_ip = config['server'].get(
+    'host', '127.0.0.1')            # Qlab Destination IP
+osc_dest_port = config['server'].getint(
+    'port', 53000)                # Qlab Destination Port
+retry_delay = config['server'].getint(
+    'retry_delay', "30")            # Server retry delay
 
 # GPIO SETUP
 status_led = LED(24)
@@ -40,25 +56,26 @@ tested = False
 osc_update_path = "/updates"
 osc_update_state = 1
 
-button1_on_path = "/cue/3.5/start"
-button1_on_value = 1
-button1_off_path = ""
-button1_off_value = 0
 
-button2_on_path = "/cue/3.5/pause"
-button2_on_value = 0
-button2_off_path = "path/to/qlab"
-button2_off_value = 0
+button1_on_path = config['buttons']['btn1_on_path']
+button1_on_value = config['buttons'].getint('btn1_on_value')
+button1_off_path = config['buttons']['btn1_off_path']
+button1_off_value = config['buttons'].getint('btn1_off_value')
 
-button3_on_path = "/cue/3.5/stop"
-button3_on_value = 0
-button3_off_path = "/cue/3.5/load"
-button3_off_value = 0
+button2_on_path = config['buttons']['btn2_on_path']
+button2_on_value = config['buttons'].getint('btn2_on_value')
+button2_off_path = config['buttons']['btn2_off_path']
+button2_off_value = config['buttons'].getint('btn2_off_value')
 
-button4_on_path = "/cue/next"
-button4_on_value = 0
-button4_off_path = "/path/to/qlab"
-button4_off_value = 0
+button3_on_path = config['buttons']['btn3_on_path']
+button3_on_value = config['buttons'].getint('btn3_on_value')
+button3_off_path = config['buttons']['btn3_off_path']
+button3_off_value = config['buttons'].getint('btn3_off_value')
+
+button4_on_path = config['buttons']['btn3_on_path']
+button4_on_value = config['buttons'].getint('btn3_on_value')
+button4_off_path = config['buttons']['btn3_off_path']
+button4_off_value = config['buttons'].getint('btn3_off_value')
 
 
 def connect_to_qlab(ip, port):
@@ -75,7 +92,8 @@ def connect_to_qlab(ip, port):
             # receive_updates(osc_update_path, osc_update_state)
             return client
         except (ConnectionRefusedError, socket.timeout, OSError) as e:
-            print(f"Cannot connect to Qlab ({e}) - retrying in {retry_delay}s")
+            print(
+                f"Cannot connect to Qlab {ip}:{port} - ({e}) - retrying in {retry_delay}s")
             status_led.blink(0.5, 0.5)
             checked = False
             print(f"Checked = {checked}")
@@ -114,18 +132,19 @@ def receive_updates(path, value):
 
 
 def button_pressed(path, value):
-    if path or value:
+    if path and value:
         print(f"Button pressed! OSC, Path: {path}, Value: {value}")
         client.send_message(path, value)
     else:
         print(f"Path or Value is Empty.  Path: {path} Value: {value}")
-    # for msg in client.get_messages(1):
-    # print("Received:", msg)
-    # response = client.get_messages(timeout=1)
-    # print(f"Response: {response}")
+        # for msg in client.get_messages(1):
+        # print("Received:", msg)
+        # response = client.get_messages(timeout=1)
+        # print(f"Response: {response}")
+
+        # First attempt at sending messages based on button - Not currently used
 
 
-# First attempt at sending messages based on button - Not currently used
 def button():
     if button1.when_pressed:
         button_pressed(button1_on_path, 1)
@@ -236,9 +255,8 @@ def button4_off():
         checked = False
         return checked
 
-
-# Test to send osc message immediately with executed script
-# button_pressed(button1_on_path, 1)
+        # Test to send osc message immediately with executed script
+        # button_pressed(button1_on_path, 1)
 
 
 threading.Thread(target=keep_alive, daemon=True).start()
