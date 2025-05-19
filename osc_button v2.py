@@ -18,9 +18,13 @@ CONFIG_FILE = 'config.ini'
 
 def load_config():
     config = configparser.ConfigParser()
-    config.read(CONFIG_FILE)
-    print(f"Loading Config - {config}")
-    return config
+    check = config.read(CONFIG_FILE)
+    if not check:
+        print(f"Config Not Found - {CONFIG_FILE}")
+        exit(0)
+    else:
+        print(f"Loading Config - {CONFIG_FILE}")
+        return config
 
 
 config = load_config()
