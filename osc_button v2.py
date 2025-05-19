@@ -21,7 +21,7 @@ def load_config():
     check = config.read(CONFIG_FILE)
     if not check:
         print(f"Config Not Found - {CONFIG_FILE}")
-        exit(0)
+        exit(1)
     else:
         print(f"Loading Config - {CONFIG_FILE}")
         return config
@@ -38,11 +38,36 @@ retry_delay = config['server'].getint(
     'retry_delay', "30")            # Server retry delay
 
 # GPIO SETUP
-status_led = LED(24)
+btn1_led = LED(18)
+btn2_led = LED(23)
+btn3_led = LED(12)
+btn4_led = LED(16)
 button1 = Button(17, pull_up=True)
 button2 = Button(27, pull_up=True)
 button3 = Button(5, pull_up=True)
 button4 = Button(6, pull_up=True)
+
+
+def status_led(mode):
+    if mode == "flash":
+        print(f"LED MODE: {mode}")
+        btn1_led.blink(0.5, 0.5)
+        btn2_led.blink(0.5, 0.5)
+        time.sleep(0.5)
+        btn3_led.blink(0.5, 0.5)
+        btn4_led.blink(0.5, 0.5)
+    elif mode == "on":
+        print(f"LED MODE: {mode}")
+        btn1_led.on()
+        btn2_led.on()
+        btn3_led.on()
+        btn4_led.on()
+    else:
+        btn1_led.off()
+        btn2_led.off()
+        btn3_led.off()
+        btn4_led.off()
+
 
 # LOCK THREADS
 lock = threading.Lock()
@@ -91,14 +116,14 @@ def connect_to_qlab(ip, port):
             response = client.get_messages(1)
             # print(f"Response: {response}")
             # print(f"Checked = {checked}")
-            status_led.on()
+            status_led("on")
             checked = True
             # receive_updates(osc_update_path, osc_update_state)
             return client
         except (ConnectionRefusedError, socket.timeout, OSError) as e:
             print(
                 f"Cannot connect to Qlab {ip}:{port} - ({e}) - retrying in {retry_delay}s")
-            status_led.blink(0.5, 0.5)
+            status_led("flash")
             checked = False
             print(f"Checked = {checked}")
             time.sleep(retry_delay)
@@ -140,7 +165,8 @@ def button_pressed(path, value):
         print(f"Button pressed! OSC, Path: {path}, Value: {value}")
         client.send_message(path, value)
     else:
-        print(f"Path or Value is Empty.  Path: {path} Value: {value}")
+        print(
+            f"Path or Value is Empty.  Path: {path} Value: {value} - Message Not Sent")
         # for msg in client.get_messages(1):
         # print("Received:", msg)
         # response = client.get_messages(timeout=1)
@@ -169,6 +195,7 @@ def button1_on():
     try:
         if checked == True:
             button_pressed(button1_on_path, button1_on_value)
+            btn1_led.off()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -181,6 +208,7 @@ def button2_on():
     try:
         if checked == True:
             button_pressed(button2_on_path, button2_on_value)
+            btn2_led.off()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -193,6 +221,7 @@ def button3_on():
     try:
         if checked == True:
             button_pressed(button3_on_path, button3_on_value)
+            btn3_led.off()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -205,6 +234,7 @@ def button4_on():
     try:
         if checked == True:
             button_pressed(button4_on_path, button4_on_value)
+            btn4_led.off()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -217,6 +247,7 @@ def button1_off():
     try:
         if checked == True:
             button_pressed(button1_off_path, button1_off_value)
+            btn1_led.on()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -229,6 +260,7 @@ def button2_off():
     try:
         if checked == True:
             button_pressed(button2_off_path, button2_off_value)
+            btn2_led.on()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -241,6 +273,7 @@ def button3_off():
     try:
         if checked == True:
             button_pressed(button3_off_path, button3_off_value)
+            btn3_led.on()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
@@ -253,6 +286,7 @@ def button4_off():
     try:
         if checked == True:
             button_pressed(button4_off_path, button4_off_value)
+            btn4_led.on()
     except (ConnectionRefusedError, socket.timeout, OSError) as error:
         print(f"OSC Message Send Failed: {error}")
         connected = False
