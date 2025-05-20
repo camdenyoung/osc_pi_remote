@@ -1,0 +1,38 @@
+import configparser
+import time
+
+CONFIG_FILE = 'config.ini'
+
+
+def load_config():
+    # global config
+    config = configparser.ConfigParser()
+    check = config.read(CONFIG_FILE)
+    if not check:
+        print(f"Config Not Found - {CONFIG_FILE}")
+        exit(1)
+    else:
+        print(f"Loading Config - {CONFIG_FILE}")
+        return config
+
+
+def update_config():
+    global osc_dest_ip, osc_dest_port, retry_delay
+    osc_dest_ip = config['server'].get(
+        'host', '127.0.0.1')            # Qlab Destination IP
+    osc_dest_port = config['server'].getint(
+        'port', 53000)                # Qlab Destination Port
+    retry_delay = config['server'].getint(
+        'retry_delay',   "30")            # Server retry delay
+
+
+while True:
+    # global osc_dest_ip, osc_dest_port, retry_delay
+    try:
+        config = load_config()
+    except:
+        print("Failed to Update")
+    else:
+        update_config()
+        print(osc_dest_ip)
+    time.sleep(5)
