@@ -1,0 +1,14 @@
+[Unit]
+Description=QLab OSC Remote
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/admin/qlab_remote
+ExecStart=/home/admin/qlab_remote/.venv/bin/python /home/admin/qlab_remote/osc_button.py
+Restart=always
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
